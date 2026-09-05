@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # RLS tests need a local Supabase stack (Docker) and are intentionally
+      # not run here — npm test skips them automatically when the
+      # SUPABASE_LOCAL_* env vars aren't set. Add a `supabase start` step
+      # (or supabase/setup-cli + supabase/postgres services) if you want
+      # those running in CI too.
+      - run: npm test
+
+      # Real secrets aren't needed for a build to succeed (the Supabase
+      # client only warns on missing env vars, it doesn't throw), but using
+      # the real ones here catches anything that actually depends on a valid
+      # value at build time. Add these under Settings -> Secrets -> Actions.
+      - run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}

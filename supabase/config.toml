@@ -1,0 +1,22 @@
+project_id = "awruofvdwraggjndeyme"
+
+# The unsubscribe link is clicked from an email with no Supabase session, and
+# the cron job authenticates with its own CRON_SECRET — neither can supply a
+# Supabase-issued JWT, so both skip the platform's default JWT check.
+[functions.unsubscribe]
+verify_jwt = false
+
+[functions.weekly-digest]
+verify_jwt = false
+
+[functions.session-reminders]
+verify_jwt = false
+
+# Paystack calls this directly with its own HMAC signature, not a Supabase JWT.
+[functions.paystack-webhook]
+verify_jwt = false
+
+# Opened from a share link by a parent/guardian with no Supabase session —
+# access is controlled by the unguessable token itself, not a JWT.
+[functions.progress-report]
+verify_jwt = false

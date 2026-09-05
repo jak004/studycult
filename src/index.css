@@ -1,0 +1,202 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Fraunces", serif;
+  --font-body: "IBM Plex Sans", sans-serif;
+
+  --color-ink: #16233d;
+  --color-ink-soft: #2c3b58;
+  --color-paper: #eef1f6;
+  --color-paper-raised: #ffffff;
+  --color-gold: #e2a33b;
+  --color-gold-soft: #f3d9a4;
+  --color-teal: #1f8a70;
+  --color-teal-soft: #d6ece6;
+  --color-muted: #5b6472;
+  --color-line: #d8dde6;
+  --color-danger: #c4453b;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Dark theme. Three states, not two: an explicit choice stamps
+   data-theme="dark"/"light" on <html> (src/lib/theme.js) and wins outright;
+   with no explicit choice the OS/browser preference decides via the media
+   query below. Utilities like bg-paper reference var(--color-paper), so
+   redefining the variable at a more specific selector is enough — no need to
+   touch every class. */
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) {
+    --color-ink: #eef1f6;
+    --color-ink-soft: #c7cedc;
+    --color-paper: #131a2b;
+    --color-paper-raised: #1c2540;
+    --color-gold: #e9b563;
+    --color-gold-soft: #3a2f1a;
+    --color-teal: #3fd6ad;
+    --color-teal-soft: #163a30;
+    --color-muted: #8b93a6;
+    --color-line: #2a3350;
+    --color-danger: #e2726a;
+  }
+}
+
+html[data-theme="dark"] {
+  --color-ink: #eef1f6;
+  --color-ink-soft: #c7cedc;
+  --color-paper: #131a2b;
+  --color-paper-raised: #1c2540;
+  --color-gold: #e9b563;
+  --color-gold-soft: #3a2f1a;
+  --color-teal: #3fd6ad;
+  --color-teal-soft: #163a30;
+  --color-muted: #8b93a6;
+  --color-line: #2a3350;
+  --color-danger: #e2726a;
+}
+
+/* Higher-contrast palette, toggled from the navbar and persisted in
+   localStorage (src/lib/accessibility.js). Comes after the dark-theme blocks
+   above on purpose: html.high-contrast and html[data-theme="dark"] are equal
+   specificity, so source order decides when both are on, and accessibility
+   should win that tie over the aesthetic dark/light choice. */
+html.high-contrast {
+  --color-ink: #000000;
+  --color-ink-soft: #000000;
+  --color-paper: #ffffff;
+  --color-paper-raised: #ffffff;
+  --color-gold: #6b4a00;
+  --color-gold-soft: #ffe9b3;
+  --color-teal: #00543d;
+  --color-teal-soft: #c8ffe9;
+  --color-muted: #2b2b2b;
+  --color-line: #000000;
+  --color-danger: #8f0000;
+}
+
+html.high-contrast .card,
+html.high-contrast .input {
+  border-width: 2px;
+}
+
+/* A faint ambient wash instead of a flat fill — the two radial gradients sit
+   at low enough opacity to read as depth, not color, in both themes. */
+body {
+  background-color: var(--color-paper);
+  background-image:
+    radial-gradient(1100px 560px at 8% -12%, color-mix(in srgb, var(--color-teal) 7%, transparent), transparent 60%),
+    radial-gradient(900px 480px at 108% 8%, color-mix(in srgb, var(--color-gold) 7%, transparent), transparent 60%);
+  background-attachment: fixed;
+  color: var(--color-ink);
+  font-family: var(--font-body);
+}
+
+::selection {
+  background: var(--color-gold-soft);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.input {
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-line);
+  background-color: var(--color-paper-raised);
+  padding: 0.65rem 0.9rem;
+  font-size: 0.9rem;
+  color: var(--color-ink);
+  outline: none;
+  box-shadow: inset 0 1px 2px color-mix(in srgb, black 4%, transparent);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.input:focus {
+  border-color: var(--color-teal);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-teal) 18%, transparent);
+}
+
+.card {
+  border-radius: 1.25rem;
+  border: 1px solid var(--color-line);
+  background-color: var(--color-paper-raised);
+  box-shadow:
+    0 1px 2px color-mix(in srgb, black 3%, transparent),
+    0 16px 36px -22px color-mix(in srgb, black 30%, transparent);
+}
+
+/* ---------- Buttons ----------
+   A shared tactile language (lift on hover, press on click, a soft glow in
+   the button's own color rather than generic grey) — rolled out first on
+   the navbar, dashboard, and landing page; safe to reuse anywhere else. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding: 0.65rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+.btn:active:not(:disabled) {
+  transform: translateY(1px) scale(0.98);
+}
+
+.btn-primary {
+  background: var(--color-ink);
+  color: var(--color-paper);
+  box-shadow: 0 10px 24px -12px color-mix(in srgb, var(--color-ink) 55%, transparent);
+}
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 32px -14px color-mix(in srgb, var(--color-ink) 60%, transparent);
+}
+
+.btn-accent {
+  background: var(--color-teal);
+  color: var(--color-paper-raised);
+  box-shadow: 0 10px 24px -12px color-mix(in srgb, var(--color-teal) 55%, transparent);
+}
+.btn-accent:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 32px -14px color-mix(in srgb, var(--color-teal) 60%, transparent);
+}
+
+.btn-gold {
+  background: var(--color-gold);
+  color: var(--color-ink);
+  box-shadow: 0 10px 24px -12px color-mix(in srgb, var(--color-gold) 55%, transparent);
+}
+.btn-gold:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 32px -14px color-mix(in srgb, var(--color-gold) 60%, transparent);
+}
+
+.btn-outline {
+  border: 1px solid var(--color-line);
+  color: var(--color-ink-soft);
+  background: transparent;
+}
+.btn-outline:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--color-ink) 35%, transparent);
+  color: var(--color-ink);
+}
+
+.btn-danger-outline {
+  border: 1px solid var(--color-line);
+  color: var(--color-ink-soft);
+  background: transparent;
+}
+.btn-danger-outline:hover:not(:disabled) {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}

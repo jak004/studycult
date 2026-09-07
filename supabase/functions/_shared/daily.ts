@@ -36,10 +36,14 @@ export function createCallRoom() {
     body: {
       name: `studycult-${crypto.randomUUID()}`,
       privacy: 'public',
-      // enable_prejoin_ui: false — both sides already went through our own
-      // ring/accept handshake, so Daily's own "click to join" device-check
-      // screen would just be a redundant second confirmation.
-      properties: { exp, eject_at_room_exp: true, enable_prejoin_ui: false },
+      // enable_prejoin_ui defaults to true and stays that way on purpose:
+      // with it off, daily-js auto-requests camera/mic on join, and if that
+      // request is denied or there's no device available, Daily's own docs
+      // say the call can end right there — which is exactly the "ends right
+      // after the receiver picks up" bug this caused. The prejoin screen is
+      // what lets Daily surface that as a visible device-permission prompt
+      // instead of a silent hangup.
+      properties: { exp, eject_at_room_exp: true },
     },
   })
 }

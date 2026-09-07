@@ -22,11 +22,20 @@ export default function CallVideoModal() {
       showLeaveButton: true,
       iframeStyle: { width: '100%', height: '100%', border: '0' },
     })
+    // Logged, not acted on — a camera/mic error shouldn't by itself end the
+    // call (Daily's prejoin screen already gives the user a chance to grant
+    // access or continue without a camera), but if a call ever drops again
+    // this is the first thing to check in the console.
+    const logError = (e) => console.error('Daily call error', e)
+    callFrame.on('camera-error', logError)
+    callFrame.on('error', logError)
     callFrame.on('left-meeting', leaveActiveCall)
     callFrame.join()
     frameRef.current = callFrame
 
     return () => {
+      callFrame.off('camera-error', logError)
+      callFrame.off('error', logError)
       callFrame.off('left-meeting', leaveActiveCall)
       callFrame.destroy()
       frameRef.current = null

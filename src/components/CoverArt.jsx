@@ -1,15 +1,7 @@
-import { useId } from 'react'
-
-// Brand-toned gradient pairs — picked from the theme palette so generated
-// art always feels on-brand instead of arbitrary rainbow hues.
-const PALETTE = [
-  ['#1f8a70', '#16233d'],
-  ['#e2a33b', '#16233d'],
-  ['#c4453b', '#16233d'],
-  ['#16233d', '#5b6472'],
-  ['#1f8a70', '#5b6472'],
-  ['#e2a33b', '#c4453b'],
-]
+// Solid brand-blue shades, monochrome on purpose — a structured placeholder
+// block (flat color + thin diagonal rule pattern) reads as "no photo yet"
+// rather than decorative gradient-blob art.
+const PALETTE = ['#0056d2', '#00419e', '#1f1f1f', '#003876', '#0063eb']
 
 function hashString(str) {
   let h = 2166136261
@@ -20,30 +12,25 @@ function hashString(str) {
   return h >>> 0
 }
 
-// Deterministic abstract cover art seeded by a string (subject, name, id) —
-// same seed always renders the same gradient + blob layout.
+// Deterministic placeholder cover art seeded by a string (subject, name,
+// id) — same seed always renders the same fill + line pattern.
 export default function CoverArt({ seed = '', className = '' }) {
-  const uid = useId()
   const h = hashString(seed)
-  const [from, to] = PALETTE[h % PALETTE.length]
-  const blobs = [0, 1, 2].map((i) => ({
-    cx: 10 + ((h >> (i * 6)) % 80),
-    cy: 10 + ((h >> (i * 6 + 3)) % 80),
-    r: 18 + ((h >> (i * 6 + 5)) % 26),
-  }))
+  const fill = PALETTE[h % PALETTE.length]
+  const offset = h % 24
 
   return (
     <svg viewBox="0 0 100 100" className={className} preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-      <defs>
-        <linearGradient id={uid} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor={from} />
-          <stop offset="100%" stopColor={to} />
-        </linearGradient>
-      </defs>
-      <rect width="100" height="100" fill={`url(#${uid})`} />
-      {blobs.map((b, i) => (
-        <circle key={i} cx={b.cx} cy={b.cy} r={b.r} fill="white" opacity={0.07 + i * 0.05} />
-      ))}
+      <rect width="100" height="100" fill={fill} />
+      <path
+        d={Array.from({ length: 7 }, (_, i) => {
+          const x = -20 + i * 24 + offset
+          return `M${x} 100 L${x + 40} 0`
+        }).join(' ')}
+        stroke="white"
+        strokeOpacity="0.08"
+        strokeWidth="10"
+      />
     </svg>
   )
 }

@@ -1,23 +1,29 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { getOrCreateDirectConversation } from '../lib/conversations'
 import CoverArt from '../components/CoverArt'
+import Card from '../components/ui/Card'
+import Button from '../components/ui/Button'
+import Badge from '../components/ui/Badge'
+import Rating from '../components/ui/Rating'
+import { CheckBadgeIcon, SearchIcon } from '../components/ui/icons'
 import { initials } from '../lib/format'
 import { formatInViewerTimezone } from '../lib/timezone'
 import { generateUpcomingSlots } from '../lib/availability'
 
 const RATING_OPTIONS = [
   { label: 'Any rating', value: 0 },
-  { label: '3+ stars', value: 3 },
-  { label: '4+ stars', value: 4 },
-  { label: '4.5+ stars', value: 4.5 },
+  { label: '3.0 & up', value: 3 },
+  { label: '4.0 & up', value: 4 },
+  { label: '4.5 & up', value: 4.5 },
 ]
 
 export default function Tutors() {
   const { profile } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [tutors, setTutors] = useState([])
   const [loading, setLoading] = useState(true)
   const [subjectFilter, setSubjectFilter] = useState('All')
@@ -27,8 +33,8 @@ export default function Tutors() {
   const [ratings, setRatings] = useState({})
   const [availableTodayIds, setAvailableTodayIds] = useState(new Set())
 
-  const [searchInput, setSearchInput] = useState('')
-  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [searchInput, setSearchInput] = useState(searchParams.get('q') || '')
+  const [debouncedSearch, setDebouncedSearch] = useState(searchParams.get('q') || '')
   const [minPrice, setMinPrice] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
   const [languageFilter, setLanguageFilter] = useState('All')
@@ -95,11 +101,16 @@ export default function Tutors() {
     load()
   }, [debouncedSearch, minPrice, maxPrice, languageFilter])
 
-  const subjects = useMemo(() => {
-    const set = new Set()
-    tutors.forEach((t) => (t.subjects || []).forEach((s) => set.add(s)))
-    return ['All', ...Array.from(set)]
+  const subjectCounts = useMemo(() => {
+    const counts = {}
+    tutors.forEach((t) => (t.subjects || []).forEach((s) => (counts[s] = (counts[s] || 0) + 1)))
+    return counts
   }, [tutors])
+
+  const subjects = useMemo(
+    () => Object.keys(subjectCounts).sort((a, b) => subjectCounts[b] - subjectCounts[a]),
+    [subjectCounts]
+  )
 
   const languages = useMemo(() => {
     const set = new Set()
@@ -129,173 +140,177 @@ export default function Tutors() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-12">
-      <h1 className="font-display text-4xl font-semibold text-ink">Find a tutor</h1>
-      <p className="mt-2 max-w-lg text-muted">
+    <div className="mx-auto max-w-7xl px-6 py-10">
+      <h1 className="text-3xl font-black text-ink">Find a tutor</h1>
+      <p className="mt-1.5 max-w-xl text-muted">
         Search by subject, bio, or teaching style — no booking form required to start a chat.
       </p>
 
-      <input
-        value={searchInput}
-        onChange={(e) => setSearchInput(e.target.value)}
-        placeholder="Search tutors, e.g. 'calculus exam prep'"
-        className="input mt-6 w-full max-w-lg"
-      />
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        {subjects.map((s) => (
-          <button
-            key={s}
-            onClick={() => setSubjectFilter(s)}
-            className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
-              subjectFilter === s
-                ? 'border-ink bg-ink text-paper'
-                : 'border-line bg-paper-raised text-ink-soft hover:border-ink/40'
-            }`}
-          >
-            {s}
-          </button>
-        ))}
-      </div>
-
-      <div className="mt-4 flex flex-wrap items-end gap-4">
-        <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-ink-soft">Min ₵/hr</span>
-          <input
-            type="number"
-            min="0"
-            value={minPrice}
-            onChange={(e) => setMinPrice(e.target.value)}
-            className="input w-24"
-          />
-        </label>
-        <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-ink-soft">Max ₵/hr</span>
-          <input
-            type="number"
-            min="0"
-            value={maxPrice}
-            onChange={(e) => setMaxPrice(e.target.value)}
-            className="input w-24"
-          />
-        </label>
-        <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-ink-soft">Language</span>
-          <select value={languageFilter} onChange={(e) => setLanguageFilter(e.target.value)} className="input">
-            {languages.map((l) => (
-              <option key={l} value={l}>
-                {l}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-ink-soft">Rating</span>
-          <select
-            value={minRating}
-            onChange={(e) => setMinRating(Number(e.target.value))}
-            className="input"
-          >
-            {RATING_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex items-center gap-2 pb-2.5 text-sm text-ink-soft">
-          <input
-            type="checkbox"
-            checked={availableTodayOnly}
-            onChange={(e) => setAvailableTodayOnly(e.target.checked)}
-          />
-          Available today
-        </label>
-      </div>
+      <label className="relative mt-6 block max-w-xl">
+        <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+        <input
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          placeholder="Search tutors, e.g. 'calculus exam prep'"
+          className="input w-full py-2.5 pl-10"
+        />
+      </label>
 
       {startError && <p className="mt-4 text-sm text-danger">{startError}</p>}
 
-      {loading ? (
-        <p className="mt-10 text-sm text-muted">Loading tutors…</p>
-      ) : filtered.length === 0 ? (
-        <div className="mt-10 card p-8 text-center">
-          <p className="text-ink-soft">No tutors match those filters.</p>
-          <p className="mt-1 text-sm text-muted">Try widening your search or clearing a filter.</p>
-        </div>
-      ) : (
-        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((tutor) => (
-            <div key={tutor.id} className="card flex flex-col overflow-hidden">
-              <div className="relative h-20">
-                <CoverArt seed={tutor.subjects?.[0] || tutor.full_name} className="h-full w-full" />
-                {tutor.avatar_url ? (
-                  <img
-                    src={tutor.avatar_url}
-                    alt={tutor.full_name}
-                    className="absolute -bottom-6 left-5 h-14 w-14 rounded-full border-4 border-paper-raised object-cover"
-                  />
-                ) : (
-                  <div className="absolute -bottom-6 left-5 flex h-14 w-14 items-center justify-center rounded-full border-4 border-paper-raised bg-ink text-lg font-semibold text-paper">
-                    {initials(tutor.full_name)}
-                  </div>
-                )}
-                <span className="absolute right-3 top-3 text-xl drop-shadow">{tutor.avatar_emoji || '🎓'}</span>
+      <div className="mt-8 flex flex-col gap-8 lg:flex-row lg:items-start">
+        <aside className="shrink-0 lg:w-64">
+          <Card className="divide-y divide-line">
+            <FilterSection title="Subject">
+              <FacetRow label="All subjects" active={subjectFilter === 'All'} onClick={() => setSubjectFilter('All')} count={tutors.length} />
+              {subjects.map((s) => (
+                <FacetRow key={s} label={s} active={subjectFilter === s} onClick={() => setSubjectFilter(s)} count={subjectCounts[s]} />
+              ))}
+            </FilterSection>
+
+            <FilterSection title="Rating">
+              {RATING_OPTIONS.map((o) => (
+                <FacetRow key={o.value} label={o.label} active={minRating === o.value} onClick={() => setMinRating(o.value)} />
+              ))}
+            </FilterSection>
+
+            <FilterSection title="Price per hour">
+              <div className="flex items-center gap-2 px-4 py-3">
+                <input
+                  type="number"
+                  min="0"
+                  aria-label="Minimum price"
+                  value={minPrice}
+                  onChange={(e) => setMinPrice(e.target.value)}
+                  placeholder="Min"
+                  className="input w-full py-1.5 text-sm"
+                />
+                <span className="text-muted">–</span>
+                <input
+                  type="number"
+                  min="0"
+                  aria-label="Maximum price"
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(e.target.value)}
+                  placeholder="Max"
+                  className="input w-full py-1.5 text-sm"
+                />
               </div>
+            </FilterSection>
 
-              <div className="flex flex-1 flex-col p-5 pt-8">
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <p className="font-display text-lg font-medium text-ink">{tutor.full_name}</p>
-                    {tutor.verification_status === 'verified' && (
-                      <span title="Verified tutor" className="text-teal">
-                        ✅
-                      </span>
-                    )}
-                    {availableTodayIds.has(tutor.id) && (
-                      <span className="rounded-full bg-teal-soft px-2 py-0.5 text-[10px] font-medium text-teal">
-                        Available today
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {tutor.hourly_rate && <p className="text-xs text-muted">₵{tutor.hourly_rate}/hr</p>}
-                    {ratings[tutor.id] && (
-                      <p className="text-xs text-muted">
-                        ⭐ {ratings[tutor.id].avg.toFixed(1)} ({ratings[tutor.id].count})
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {tutor.bio && <p className="mt-3 text-sm leading-relaxed text-muted">{tutor.bio}</p>}
-
-                {(tutor.subjects || []).length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {tutor.subjects.map((s) => (
-                      <span key={s} className="rounded-full bg-teal-soft px-2.5 py-1 text-xs font-medium text-ink">
-                        {s}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                <div className="mt-5 flex gap-2">
-                  <button
-                    onClick={() => messageTutor(tutor)}
-                    disabled={startingId === tutor.id}
-                    className="btn btn-primary flex-1 px-4 py-2.5 text-sm"
-                  >
-                    {startingId === tutor.id ? 'Opening chat…' : 'Message'}
-                  </button>
-                  <button onClick={() => setBookingTutor(tutor)} className="btn btn-outline flex-1 px-4 py-2.5 text-sm">
-                    Book
-                  </button>
-                </div>
+            <FilterSection title="Language">
+              <div className="px-4 py-3">
+                <select value={languageFilter} onChange={(e) => setLanguageFilter(e.target.value)} className="input w-full py-1.5 text-sm">
+                  {languages.map((l) => (
+                    <option key={l} value={l}>
+                      {l}
+                    </option>
+                  ))}
+                </select>
               </div>
+            </FilterSection>
+
+            <div className="px-4 py-3">
+              <label className="flex items-center gap-2 text-sm text-ink-soft">
+                <input
+                  type="checkbox"
+                  checked={availableTodayOnly}
+                  onChange={(e) => setAvailableTodayOnly(e.target.checked)}
+                />
+                Available today
+              </label>
             </div>
-          ))}
+          </Card>
+        </aside>
+
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-ink-soft">
+            {loading ? 'Loading…' : `${filtered.length} tutor${filtered.length === 1 ? '' : 's'}`}
+          </p>
+
+          {loading ? (
+            <div className="mt-4 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="animate-pulse rounded-md border border-line bg-paper-raised">
+                  <div className="aspect-video w-full bg-paper" />
+                  <div className="space-y-2 p-4">
+                    <div className="h-4 w-2/3 rounded bg-paper" />
+                    <div className="h-3 w-full rounded bg-paper" />
+                    <div className="h-3 w-1/2 rounded bg-paper" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
+            <Card className="mt-4 p-8 text-center">
+              <p className="font-semibold text-ink">No tutors match those filters.</p>
+              <p className="mt-1 text-sm text-muted">Try widening your search or clearing a filter.</p>
+            </Card>
+          ) : (
+            <div className="mt-4 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+              {filtered.map((tutor) => {
+                const rating = ratings[tutor.id]
+                const availableToday = availableTodayIds.has(tutor.id)
+                return (
+                  <Card key={tutor.id} interactive className="flex flex-col overflow-hidden">
+                    <div className="aspect-video w-full border-b border-line">
+                      <CoverArt seed={tutor.subjects?.[0] || tutor.full_name} className="h-full w-full" />
+                    </div>
+
+                    <div className="flex flex-1 flex-col p-4">
+                      <div className="flex items-center gap-2">
+                        {tutor.avatar_url ? (
+                          <img src={tutor.avatar_url} alt="" className="h-6 w-6 shrink-0 rounded-full object-cover" />
+                        ) : (
+                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ink text-[10px] font-bold text-paper">
+                            {initials(tutor.full_name)}
+                          </span>
+                        )}
+                        <p className="truncate text-base font-bold leading-tight text-ink">{tutor.full_name}</p>
+                        {tutor.verification_status === 'verified' && (
+                          <CheckBadgeIcon className="h-4 w-4 shrink-0 text-primary" aria-label="Verified tutor" />
+                        )}
+                      </div>
+
+                      {tutor.bio && <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted">{tutor.bio}</p>}
+
+                      <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <Rating value={rating?.avg} count={rating?.count} />
+                        {tutor.hourly_rate != null && (
+                          <span className="text-sm font-bold text-ink">₵{tutor.hourly_rate}/hr</span>
+                        )}
+                      </div>
+
+                      {(tutor.subjects || []).length > 0 && (
+                        <div className="mt-2.5 flex flex-wrap gap-1.5">
+                          {tutor.subjects.slice(0, 4).map((s) => (
+                            <Badge key={s}>{s}</Badge>
+                          ))}
+                        </div>
+                      )}
+
+                      {availableToday && (
+                        <Badge variant="success" className="mt-2.5 self-start">
+                          Available today
+                        </Badge>
+                      )}
+
+                      <div className="mt-4 flex gap-2 border-t border-line pt-3">
+                        <Button onClick={() => messageTutor(tutor)} disabled={startingId === tutor.id} size="sm" className="flex-1">
+                          {startingId === tutor.id ? 'Opening chat…' : 'Message'}
+                        </Button>
+                        <Button onClick={() => setBookingTutor(tutor)} variant="outline" size="sm" className="flex-1">
+                          Book
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                )
+              })}
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {bookingTutor && (
         <BookingModal
@@ -306,6 +321,29 @@ export default function Tutors() {
         />
       )}
     </div>
+  )
+}
+
+function FilterSection({ title, children }) {
+  return (
+    <div className="py-3 first:pt-4 last:pb-4">
+      <p className="px-4 pb-2 text-xs font-bold uppercase tracking-wide text-muted">{title}</p>
+      {children}
+    </div>
+  )
+}
+
+function FacetRow({ label, active, onClick, count }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex w-full items-center justify-between px-4 py-1.5 text-left text-sm transition-colors ${
+        active ? 'font-bold text-primary' : 'text-ink-soft hover:text-ink'
+      }`}
+    >
+      <span className="truncate">{label}</span>
+      {count != null && <span className="ml-2 shrink-0 text-xs text-muted">{count}</span>}
+    </button>
   )
 }
 
@@ -368,20 +406,20 @@ function BookingModal({ tutor, myId, myName, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 px-6">
-      <div className="card w-full max-w-md p-6">
+      <Card className="w-full max-w-md p-6">
         {done ? (
           <div className="text-center">
-            <p className="font-display text-xl font-medium text-ink">Request sent 🎉</p>
+            <p className="text-xl font-bold text-ink">Request sent</p>
             <p className="mt-2 text-sm text-muted">
               {tutor.full_name} will confirm your session for {formatInViewerTimezone(selected.scheduled_at)}.
             </p>
-            <button onClick={onClose} className="btn btn-primary mt-5 px-5 py-2.5 text-sm">
+            <Button onClick={onClose} className="mt-5">
               Done
-            </button>
+            </Button>
           </div>
         ) : (
           <>
-            <h2 className="font-display text-xl font-medium text-ink">Book {tutor.full_name}</h2>
+            <h2 className="text-xl font-bold text-ink">Book {tutor.full_name}</h2>
             <p className="mt-1 text-sm text-muted">Times shown in your local timezone.</p>
 
             <div className="mt-4 flex max-h-72 flex-col gap-2 overflow-y-auto">
@@ -394,8 +432,8 @@ function BookingModal({ tutor, myId, myName, onClose }) {
                   <button
                     key={slot.key}
                     onClick={() => setSelected(slot)}
-                    className={`rounded-xl border px-4 py-2.5 text-left text-sm transition-colors ${
-                      selected?.key === slot.key ? 'border-teal bg-teal-soft' : 'border-line hover:border-ink/30'
+                    className={`rounded border px-4 py-2.5 text-left text-sm transition-colors ${
+                      selected?.key === slot.key ? 'border-primary bg-primary-soft' : 'border-line hover:border-ink/30'
                     }`}
                   >
                     {formatInViewerTimezone(slot.scheduled_at)}
@@ -407,16 +445,16 @@ function BookingModal({ tutor, myId, myName, onClose }) {
             {error && <p className="mt-3 text-sm text-danger">{error}</p>}
 
             <div className="mt-5 flex justify-end gap-2">
-              <button onClick={onClose} className="rounded-full px-4 py-2 text-sm font-medium text-muted">
+              <Button onClick={onClose} variant="ghost">
                 Cancel
-              </button>
-              <button onClick={confirmBooking} disabled={!selected || booking} className="btn btn-primary px-5 py-2.5 text-sm">
+              </Button>
+              <Button onClick={confirmBooking} disabled={!selected || booking}>
                 {booking ? 'Booking…' : 'Request session'}
-              </button>
+              </Button>
             </div>
           </>
         )}
-      </div>
+      </Card>
     </div>
   )
 }

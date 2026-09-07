@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import NotificationBell from './NotificationBell'
+import Button from './ui/Button'
+import { SearchIcon, MenuIcon, CloseIcon, SunIcon, MoonIcon } from './ui/icons'
 import { getStoredHighContrast, applyHighContrast } from '../lib/accessibility'
 import { getEffectiveTheme, applyTheme } from '../lib/theme'
 
@@ -12,6 +14,7 @@ export default function Navbar() {
   const [highContrast, setHighContrast] = useState(getStoredHighContrast)
   const [theme, setTheme] = useState(getEffectiveTheme)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [searchInput, setSearchInput] = useState('')
 
   // Closes the mobile menu on every navigation, including a link click
   // inside it (the link itself also closes it directly, but this covers any
@@ -30,6 +33,12 @@ export default function Navbar() {
     const next = theme === 'dark' ? 'light' : 'dark'
     applyTheme(next)
     setTheme(next)
+  }
+
+  function submitSearch(e) {
+    e.preventDefault()
+    const q = searchInput.trim()
+    navigate(q ? `/tutors?q=${encodeURIComponent(q)}` : '/tutors')
   }
 
   // Browsing/booking other tutors doesn't apply to a tutor account — they
@@ -59,22 +68,37 @@ export default function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-30 border-b border-line bg-paper/85 shadow-[0_1px_0_rgba(0,0,0,0.02),0_12px_28px_-24px_rgba(22,35,61,0.4)] backdrop-blur-md">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link to={session ? '/dashboard' : '/'} className="font-display text-xl font-semibold tracking-tight text-ink">
+    <header className="sticky top-0 z-30 border-b border-line bg-paper-raised">
+      <div className="mx-auto flex max-w-7xl items-center gap-6 px-6 py-3">
+        <Link to={session ? '/dashboard' : '/'} className="shrink-0 text-xl font-black tracking-tight text-ink">
           StudyCult
         </Link>
 
+        {session && profile?.role !== 'tutor' && (
+          <form onSubmit={submitSearch} className="hidden max-w-md flex-1 md:block">
+            <label className="relative block">
+              <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+              <input
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Search tutors, subjects, exam prep…"
+                aria-label="Search tutors"
+                className="input w-full py-2 pl-9"
+              />
+            </label>
+          </form>
+        )}
+
         {session && (
-          <nav className="hidden gap-1 md:flex">
+          <nav className="ml-auto hidden shrink-0 gap-5 md:flex">
             {links.map((l) => (
               <Link
                 key={l.to}
                 to={l.to}
-                className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                className={`border-b-2 py-1 text-sm font-bold transition-colors ${
                   location.pathname === l.to
-                    ? 'bg-ink text-paper shadow-[0_8px_18px_-10px_rgba(22,35,61,0.55)]'
-                    : 'text-ink-soft hover:bg-teal-soft'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-ink-soft hover:text-ink'
                 }`}
               >
                 {l.label}
@@ -83,10 +107,10 @@ export default function Navbar() {
             {profile?.is_admin && (
               <Link
                 to="/admin"
-                className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                className={`border-b-2 py-1 text-sm font-bold transition-colors ${
                   location.pathname === '/admin'
-                    ? 'bg-ink text-paper shadow-[0_8px_18px_-10px_rgba(22,35,61,0.55)]'
-                    : 'text-ink-soft hover:bg-teal-soft'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-ink-soft hover:text-ink'
                 }`}
               >
                 Admin
@@ -95,20 +119,20 @@ export default function Navbar() {
           </nav>
         )}
 
-        <div className="flex items-center gap-2">
+        <div className={`flex shrink-0 items-center gap-2 ${session ? '' : 'ml-auto'}`}>
           <button
             onClick={toggleTheme}
             aria-pressed={theme === 'dark'}
             title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line text-sm text-ink-soft hover:border-ink/30 sm:flex"
+            className="hidden h-8 w-8 shrink-0 items-center justify-center rounded border border-line text-ink-soft hover:border-ink/30 sm:flex"
           >
-            {theme === 'dark' ? '☀' : '☾'}
+            {theme === 'dark' ? <SunIcon className="h-4 w-4" /> : <MoonIcon className="h-4 w-4" />}
           </button>
           <button
             onClick={toggleHighContrast}
             aria-pressed={highContrast}
             title={highContrast ? 'Turn off high-contrast mode' : 'Turn on high-contrast mode (for low vision/readability)'}
-            className={`hidden h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs font-bold sm:flex ${
+            className={`hidden h-8 w-8 shrink-0 items-center justify-center rounded border text-xs font-bold sm:flex ${
               highContrast ? 'border-ink bg-ink text-paper' : 'border-line text-ink-soft hover:border-ink/30'
             }`}
           >
@@ -120,49 +144,65 @@ export default function Navbar() {
               <NotificationBell userId={profile?.id} />
               <Link
                 to="/profile"
-                className="hidden items-center gap-2 rounded-full border border-line bg-paper-raised px-3 py-1.5 text-sm text-ink-soft sm:flex"
+                className="hidden items-center gap-2 rounded border border-line px-3 py-1.5 text-sm text-ink-soft hover:border-ink/30 sm:flex"
               >
                 {profile?.avatar_url ? (
                   <img src={profile.avatar_url} alt="" className="h-5 w-5 rounded-full object-cover" />
                 ) : (
-                  <span>{profile?.avatar_emoji || '🎓'}</span>
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
+                    {(profile?.full_name || '?').charAt(0).toUpperCase()}
+                  </span>
                 )}
                 <span>{profile?.full_name || 'Profile'}</span>
               </Link>
-              <button onClick={handleSignOut} className="btn btn-danger-outline hidden px-4 py-2 text-sm sm:inline-flex">
+              <Button onClick={handleSignOut} variant="danger" size="sm" className="hidden sm:inline-flex">
                 Sign out
-              </button>
+              </Button>
               <button
                 onClick={() => setMobileOpen((o) => !o)}
                 aria-expanded={mobileOpen}
                 aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-line text-ink-soft md:hidden"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded border border-line text-ink-soft md:hidden"
               >
-                {mobileOpen ? '✕' : '☰'}
+                {mobileOpen ? <CloseIcon className="h-4 w-4" /> : <MenuIcon className="h-4 w-4" />}
               </button>
             </>
           ) : (
             <>
-              <Link to="/login" className="text-sm font-medium text-ink-soft hover:text-ink">
+              <Link to="/login" className="text-sm font-bold text-ink-soft hover:text-ink">
                 Log in
               </Link>
-              <Link to="/signup" className="btn btn-primary px-4 py-2 text-sm">
+              <Button as={Link} to="/signup" size="sm">
                 Get started
-              </Link>
+              </Button>
             </>
           )}
         </div>
       </div>
 
       {session && mobileOpen && (
-        <div className="border-t border-line bg-paper px-6 py-4 md:hidden">
+        <div className="border-t border-line bg-paper-raised px-6 py-4 md:hidden">
+          {profile?.role !== 'tutor' && (
+            <form onSubmit={submitSearch} className="mb-3">
+              <label className="relative block">
+                <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+                <input
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="Search tutors, subjects…"
+                  aria-label="Search tutors"
+                  className="input w-full py-2 pl-9"
+                />
+              </label>
+            </form>
+          )}
           <nav className="flex flex-col gap-1">
             {links.map((l) => (
               <Link
                 key={l.to}
                 to={l.to}
-                className={`rounded-xl px-3 py-2.5 text-sm font-medium ${
-                  location.pathname === l.to ? 'bg-ink text-paper' : 'text-ink-soft hover:bg-teal-soft'
+                className={`rounded px-3 py-2.5 text-sm font-bold ${
+                  location.pathname === l.to ? 'bg-primary-soft text-primary' : 'text-ink-soft hover:bg-paper'
                 }`}
               >
                 {l.label}
@@ -171,8 +211,8 @@ export default function Navbar() {
             {profile?.is_admin && (
               <Link
                 to="/admin"
-                className={`rounded-xl px-3 py-2.5 text-sm font-medium ${
-                  location.pathname === '/admin' ? 'bg-ink text-paper' : 'text-ink-soft hover:bg-teal-soft'
+                className={`rounded px-3 py-2.5 text-sm font-bold ${
+                  location.pathname === '/admin' ? 'bg-primary-soft text-primary' : 'text-ink-soft hover:bg-paper'
                 }`}
               >
                 Admin
@@ -180,8 +220,8 @@ export default function Navbar() {
             )}
             <Link
               to="/profile"
-              className={`rounded-xl px-3 py-2.5 text-sm font-medium ${
-                location.pathname === '/profile' ? 'bg-ink text-paper' : 'text-ink-soft hover:bg-teal-soft'
+              className={`rounded px-3 py-2.5 text-sm font-bold ${
+                location.pathname === '/profile' ? 'bg-primary-soft text-primary' : 'text-ink-soft hover:bg-paper'
               }`}
             >
               Profile
@@ -191,13 +231,14 @@ export default function Navbar() {
           <div className="mt-3 flex items-center gap-2 border-t border-line pt-3">
             <button
               onClick={toggleTheme}
-              className="flex flex-1 items-center justify-center gap-2 rounded-full border border-line px-3 py-2 text-sm text-ink-soft"
+              className="flex flex-1 items-center justify-center gap-2 rounded border border-line px-3 py-2 text-sm text-ink-soft"
             >
-              {theme === 'dark' ? '☀ Light mode' : '☾ Dark mode'}
+              {theme === 'dark' ? <SunIcon className="h-4 w-4" /> : <MoonIcon className="h-4 w-4" />}
+              {theme === 'dark' ? 'Light mode' : 'Dark mode'}
             </button>
             <button
               onClick={toggleHighContrast}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-full border px-3 py-2 text-sm ${
+              className={`flex flex-1 items-center justify-center gap-2 rounded border px-3 py-2 text-sm ${
                 highContrast ? 'border-ink bg-ink text-paper' : 'border-line text-ink-soft'
               }`}
             >
@@ -205,9 +246,9 @@ export default function Navbar() {
             </button>
           </div>
 
-          <button onClick={handleSignOut} className="btn btn-danger-outline mt-3 w-full px-4 py-2 text-sm">
+          <Button onClick={handleSignOut} variant="danger" className="mt-3 w-full">
             Sign out
-          </button>
+          </Button>
         </div>
       )}
     </header>

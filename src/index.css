@@ -1,20 +1,33 @@
 @import "tailwindcss";
 
 @theme {
-  --font-display: "Fraunces", serif;
-  --font-body: "IBM Plex Sans", sans-serif;
+  --font-display: "Source Sans 3", "Source Sans Pro", sans-serif;
+  --font-body: "Source Sans 3", "Source Sans Pro", sans-serif;
 
-  --color-ink: #16233d;
-  --color-ink-soft: #2c3b58;
-  --color-paper: #eef1f6;
+  /* Coursera-style system: deep blue as the one primary action color,
+     near-black ink for headings/body, light-gray paper for page background.
+     --color-gold/--color-teal are kept (and re-pointed at blue) only so
+     pages not yet migrated off them don't lose their utility classes —
+     new/updated components should use --color-primary directly and these
+     two aliases should shrink over time as each page gets its redesign pass. */
+  --color-primary: #0056d2;
+  --color-primary-dark: #00419e;
+  --color-primary-soft: #eaf1fd;
+
+  --color-ink: #1f1f1f;
+  --color-ink-soft: #454545;
+  --color-paper: #f5f7f8;
   --color-paper-raised: #ffffff;
-  --color-gold: #e2a33b;
-  --color-gold-soft: #f3d9a4;
-  --color-teal: #1f8a70;
-  --color-teal-soft: #d6ece6;
-  --color-muted: #5b6472;
-  --color-line: #d8dde6;
-  --color-danger: #c4453b;
+  --color-muted: #656565;
+  --color-line: #d1d7dc;
+  --color-danger: #b3251a;
+  --color-success: #0f6f3f;
+  --color-success-soft: #e6f4ec;
+
+  --color-gold: var(--color-primary);
+  --color-gold-soft: var(--color-primary-soft);
+  --color-teal: var(--color-primary);
+  --color-teal-soft: var(--color-primary-soft);
 }
 
 html {
@@ -29,32 +42,42 @@ html {
    touch every class. */
 @media (prefers-color-scheme: dark) {
   html:not([data-theme="light"]) {
-    --color-ink: #eef1f6;
-    --color-ink-soft: #c7cedc;
-    --color-paper: #131a2b;
-    --color-paper-raised: #1c2540;
-    --color-gold: #e9b563;
-    --color-gold-soft: #3a2f1a;
-    --color-teal: #3fd6ad;
-    --color-teal-soft: #163a30;
-    --color-muted: #8b93a6;
-    --color-line: #2a3350;
+    --color-primary: #4c8dff;
+    --color-primary-dark: #2f6fe0;
+    --color-primary-soft: #142943;
+    --color-ink: #f5f7f8;
+    --color-ink-soft: #cbd1d6;
+    --color-paper: #14171a;
+    --color-paper-raised: #1e2226;
+    --color-muted: #9aa1a8;
+    --color-line: #33383d;
     --color-danger: #e2726a;
+    --color-success: #4cbd82;
+    --color-success-soft: #123322;
+    --color-gold: var(--color-primary);
+    --color-gold-soft: var(--color-primary-soft);
+    --color-teal: var(--color-primary);
+    --color-teal-soft: var(--color-primary-soft);
   }
 }
 
 html[data-theme="dark"] {
-  --color-ink: #eef1f6;
-  --color-ink-soft: #c7cedc;
-  --color-paper: #131a2b;
-  --color-paper-raised: #1c2540;
-  --color-gold: #e9b563;
-  --color-gold-soft: #3a2f1a;
-  --color-teal: #3fd6ad;
-  --color-teal-soft: #163a30;
-  --color-muted: #8b93a6;
-  --color-line: #2a3350;
+  --color-primary: #4c8dff;
+  --color-primary-dark: #2f6fe0;
+  --color-primary-soft: #142943;
+  --color-ink: #f5f7f8;
+  --color-ink-soft: #cbd1d6;
+  --color-paper: #14171a;
+  --color-paper-raised: #1e2226;
+  --color-muted: #9aa1a8;
+  --color-line: #33383d;
   --color-danger: #e2726a;
+  --color-success: #4cbd82;
+  --color-success-soft: #123322;
+  --color-gold: var(--color-primary);
+  --color-gold-soft: var(--color-primary-soft);
+  --color-teal: var(--color-primary);
+  --color-teal-soft: var(--color-primary-soft);
 }
 
 /* Higher-contrast palette, toggled from the navbar and persisted in
@@ -63,17 +86,22 @@ html[data-theme="dark"] {
    specificity, so source order decides when both are on, and accessibility
    should win that tie over the aesthetic dark/light choice. */
 html.high-contrast {
+  --color-primary: #00308f;
+  --color-primary-dark: #001d57;
+  --color-primary-soft: #dbe8ff;
   --color-ink: #000000;
   --color-ink-soft: #000000;
   --color-paper: #ffffff;
   --color-paper-raised: #ffffff;
-  --color-gold: #6b4a00;
-  --color-gold-soft: #ffe9b3;
-  --color-teal: #00543d;
-  --color-teal-soft: #c8ffe9;
   --color-muted: #2b2b2b;
   --color-line: #000000;
   --color-danger: #8f0000;
+  --color-success: #004d26;
+  --color-success-soft: #d4f5e2;
+  --color-gold: var(--color-primary);
+  --color-gold-soft: var(--color-primary-soft);
+  --color-teal: var(--color-primary);
+  --color-teal-soft: var(--color-primary-soft);
 }
 
 html.high-contrast .card,
@@ -81,20 +109,14 @@ html.high-contrast .input {
   border-width: 2px;
 }
 
-/* A faint ambient wash instead of a flat fill — the two radial gradients sit
-   at low enough opacity to read as depth, not color, in both themes. */
 body {
   background-color: var(--color-paper);
-  background-image:
-    radial-gradient(1100px 560px at 8% -12%, color-mix(in srgb, var(--color-teal) 7%, transparent), transparent 60%),
-    radial-gradient(900px 480px at 108% 8%, color-mix(in srgb, var(--color-gold) 7%, transparent), transparent 60%);
-  background-attachment: fixed;
   color: var(--color-ink);
   font-family: var(--font-body);
 }
 
 ::selection {
-  background: var(--color-gold-soft);
+  background: var(--color-primary-soft);
 }
 
 .font-display {
@@ -102,93 +124,78 @@ body {
 }
 
 .input {
-  border-radius: 0.75rem;
+  border-radius: 4px;
   border: 1px solid var(--color-line);
   background-color: var(--color-paper-raised);
-  padding: 0.65rem 0.9rem;
+  padding: 0.6rem 0.85rem;
   font-size: 0.9rem;
   color: var(--color-ink);
   outline: none;
-  box-shadow: inset 0 1px 2px color-mix(in srgb, black 4%, transparent);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .input:focus {
-  border-color: var(--color-teal);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-teal) 18%, transparent);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
 }
 
 .card {
-  border-radius: 1.25rem;
+  border-radius: 6px;
   border: 1px solid var(--color-line);
   background-color: var(--color-paper-raised);
-  box-shadow:
-    0 1px 2px color-mix(in srgb, black 3%, transparent),
-    0 16px 36px -22px color-mix(in srgb, black 30%, transparent);
+  box-shadow: 0 1px 2px color-mix(in srgb, black 4%, transparent);
 }
 
 /* ---------- Buttons ----------
-   A shared tactile language (lift on hover, press on click, a soft glow in
-   the button's own color rather than generic grey) — rolled out first on
-   the navbar, dashboard, and landing page; safe to reuse anywhere else. */
+   Solid, sharp-cornered, no gradients or hover-lift — flat color changes
+   only, matching the rest of the flat Coursera-style component language. */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border-radius: 999px;
+  border-radius: 4px;
   padding: 0.65rem 1.5rem;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 700;
   white-space: nowrap;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 .btn:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
-  transform: none !important;
-}
-.btn:active:not(:disabled) {
-  transform: translateY(1px) scale(0.98);
 }
 
 .btn-primary {
-  background: var(--color-ink);
-  color: var(--color-paper);
-  box-shadow: 0 10px 24px -12px color-mix(in srgb, var(--color-ink) 55%, transparent);
+  background: var(--color-primary);
+  color: #ffffff;
 }
 .btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 16px 32px -14px color-mix(in srgb, var(--color-ink) 60%, transparent);
+  background: var(--color-primary-dark);
 }
 
 .btn-accent {
-  background: var(--color-teal);
-  color: var(--color-paper-raised);
-  box-shadow: 0 10px 24px -12px color-mix(in srgb, var(--color-teal) 55%, transparent);
+  background: var(--color-ink);
+  color: var(--color-paper);
 }
 .btn-accent:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 16px 32px -14px color-mix(in srgb, var(--color-teal) 60%, transparent);
+  background: var(--color-ink-soft);
 }
 
 .btn-gold {
-  background: var(--color-gold);
-  color: var(--color-ink);
-  box-shadow: 0 10px 24px -12px color-mix(in srgb, var(--color-gold) 55%, transparent);
+  background: var(--color-primary);
+  color: #ffffff;
 }
 .btn-gold:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 16px 32px -14px color-mix(in srgb, var(--color-gold) 60%, transparent);
+  background: var(--color-primary-dark);
 }
 
 .btn-outline {
-  border: 1px solid var(--color-line);
-  color: var(--color-ink-soft);
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
   background: transparent;
 }
 .btn-outline:hover:not(:disabled) {
-  border-color: color-mix(in srgb, var(--color-ink) 35%, transparent);
-  color: var(--color-ink);
+  background: var(--color-primary-soft);
 }
 
 .btn-danger-outline {

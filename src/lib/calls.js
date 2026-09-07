@@ -1,19 +1,23 @@
 import { supabase } from './supabaseClient'
 
-// Same deterministic Jitsi room the existing "Start video call" button in
-// ChatWindow opens — https://meet.jit.si needs no account/API key/room
-// creation call, just a stable name, so a call and an ad-hoc video join
-// always land in the same room for a given conversation.
-export function jitsiRoomUrl(conversationId) {
-  return `https://meet.jit.si/studycult-${conversationId}`
-}
-
+// Public meet.jit.si (used elsewhere in this app for ad-hoc group calls)
+// requires whoever's first into a room to log in with a Google/GitHub/etc
+// account as of Jitsi's August 2023 policy change — a dealbreaker for a
+// ring-and-answer flow where either side might be first. Daily.co's
+// create-room Edge Function keeps the API key server-side and gives every
+// 1:1 call its own login-free room.
 export async function startCall({ conversationId, callerId, receiverId }) {
+  const { data: room, error: roomError } = await supabase.functions.invoke('create-call-room', {
+    body: { conversation_id: conversationId, receiver_id: receiverId },
+  })
+  if (roomError) throw roomError
+  if (room?.error) throw new Error(room.error)
+
   const { data, error } = await supabase
     .from('calls')
     .insert({
       conversation_id: conversationId,
-      room_url: jitsiRoomUrl(conversationId),
+      room_url: room.room_url,
       caller_id: callerId,
       receiver_id: receiverId,
       status: 'ringing',

@@ -1,49 +1,35 @@
 import { useEffect, useRef } from 'react'
+import DailyIframe from '@daily-co/daily-js'
 import { useCall } from '../../context/CallContext'
 
 // The actual video surface once a call is accepted, shown to both sides.
-// Uses Jitsi's IFrame External API (a script tag, not a package — Jitsi's
-// public server needs no build step) instead of a bare <iframe src=...>
-// so we get a real videoConferenceLeft event: hanging up from inside
-// Jitsi's own UI marks the call ended the same as clicking our Leave
-// button, which is what lets the *other* participant's overlay close too
-// (via the resulting `calls` row UPDATE, handled in CallContext).
+// Daily's own in-call toolbar already has mute/camera/leave controls, so
+// this is just a thin header (who you're talking to, a backup Leave button)
+// around the embed. The 'left-meeting' event is what lets the *other*
+// participant's overlay close too — hanging up either from our header
+// button or Daily's own leave button ends up updating the `calls` row,
+// which the other side is watching via CallContext.
 export default function CallVideoModal() {
   const { activeCall, leaveActiveCall } = useCall()
   const containerRef = useRef(null)
-  const apiRef = useRef(null)
+  const frameRef = useRef(null)
 
   useEffect(() => {
-    if (!activeCall) return
-    let cancelled = false
+    if (!activeCall || !containerRef.current) return
 
-    function mount() {
-      if (cancelled || !containerRef.current || !window.JitsiMeetExternalAPI) return
-      const roomName = activeCall.roomUrl.split('/').pop()
-      const api = new window.JitsiMeetExternalAPI('meet.jit.si', {
-        roomName,
-        parentNode: containerRef.current,
-        width: '100%',
-        height: '100%',
-      })
-      api.addEventListener('videoConferenceLeft', leaveActiveCall)
-      apiRef.current = api
-    }
-
-    if (window.JitsiMeetExternalAPI) {
-      mount()
-    } else {
-      const script = document.createElement('script')
-      script.src = 'https://meet.jit.si/external_api.js'
-      script.async = true
-      script.onload = mount
-      document.body.appendChild(script)
-    }
+    const callFrame = DailyIframe.createFrame(containerRef.current, {
+      url: activeCall.roomUrl,
+      showLeaveButton: true,
+      iframeStyle: { width: '100%', height: '100%', border: '0' },
+    })
+    callFrame.on('left-meeting', leaveActiveCall)
+    callFrame.join()
+    frameRef.current = callFrame
 
     return () => {
-      cancelled = true
-      apiRef.current?.dispose()
-      apiRef.current = null
+      callFrame.off('left-meeting', leaveActiveCall)
+      callFrame.destroy()
+      frameRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeCall?.id])

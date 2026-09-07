@@ -13,6 +13,7 @@
     "test:rls": "vitest run tests/rls"
   },
   "dependencies": {
+    "@daily-co/daily-js": "^0.92.2",
     "@sentry/react": "^10.73.0",
     "@supabase/supabase-js": "^2.115.0",
     "pdfjs-dist": "^6.3.289",

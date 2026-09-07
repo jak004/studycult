@@ -4,6 +4,10 @@ import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
+import { CallProvider } from './context/CallContext.jsx'
+import IncomingCallOverlay from './components/calls/IncomingCallOverlay.jsx'
+import OutgoingCallOverlay from './components/calls/OutgoingCallOverlay.jsx'
+import CallVideoModal from './components/calls/CallVideoModal.jsx'
 import { initSentry, SentryErrorBoundary } from './lib/sentry.js'
 import ErrorFallback from './components/ErrorFallback.jsx'
 import { getStoredHighContrast } from './lib/accessibility.js'
@@ -22,7 +26,12 @@ createRoot(document.getElementById('root')).render(
     <SentryErrorBoundary fallback={ErrorFallback}>
       <BrowserRouter>
         <AuthProvider>
-          <App />
+          <CallProvider>
+            <App />
+            <IncomingCallOverlay />
+            <OutgoingCallOverlay />
+            <CallVideoModal />
+          </CallProvider>
         </AuthProvider>
       </BrowserRouter>
     </SentryErrorBoundary>

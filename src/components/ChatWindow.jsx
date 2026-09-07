@@ -3,8 +3,10 @@ import { supabase } from '../lib/supabaseClient'
 import { trackEvent } from '../lib/analytics'
 import { formatDayLabel, formatTimeOnly } from '../lib/timezone'
 import { displayName } from '../lib/names'
+import { useCall } from '../context/CallContext'
 
 export default function ChatWindow({ conversation, myId, myName, myRole, memberNames }) {
+  const { placeCall } = useCall()
   const [messages, setMessages] = useState([])
   const [draft, setDraft] = useState('')
   const [loading, setLoading] = useState(true)
@@ -361,6 +363,25 @@ export default function ChatWindow({ conversation, myId, myName, myRole, memberN
     }
   }
 
+  // 1:1 chats get the ringing flow (CallContext) — ring, accept/decline,
+  // 30s miss timeout, appears anywhere in the app for the receiver. Groups
+  // keep the older "everyone who has this chat open gets pinged, join the
+  // shared room whenever" behavior above: a `calls` row has exactly one
+  // receiver, so it isn't a fit for a multi-member conversation.
+  function handleStartCall() {
+    if (conversation.is_group || otherMemberIds.length !== 1) {
+      startVideoCall()
+      return
+    }
+    const receiverId = otherMemberIds[0]
+    placeCall({ conversationId: conversation.id, receiverId, receiverName: nameById[receiverId] })
+    supabase.from('events').insert({
+      user_id: receiverId,
+      type: 'video_call_started',
+      payload: { conversation_id: conversation.id, caller_name: myName || 'Someone' },
+    })
+  }
+
   async function submitReport(e) {
     e.preventDefault()
     if (!reportReason.trim() || otherMemberIds.length !== 1) return
@@ -457,7 +478,7 @@ export default function ChatWindow({ conversation, myId, myName, myRole, memberN
               )}
             </div>
           )}
-          <button onClick={startVideoCall} className="btn btn-outline px-3 py-1.5 text-xs">
+          <button onClick={handleStartCall} className="btn btn-outline px-3 py-1.5 text-xs">
             🎥 Start video call
           </button>
           {!conversation.is_group && otherMemberIds.length === 1 && (

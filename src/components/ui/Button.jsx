@@ -13,6 +13,11 @@ const VARIANTS = {
   secondary: 'bg-transparent text-ink border border-line hover:border-ink',
   danger: 'bg-transparent text-ink-soft border border-line hover:border-danger hover:text-danger',
   ghost: 'bg-transparent text-ink-soft border border-transparent hover:text-ink hover:bg-paper',
+  // Solid fills reserved for accept/decline-style calls-to-action (incoming
+  // call overlay) where the WhatsApp/FaceTime green-vs-red convention is
+  // clearer than our usual blue-primary/outline pairing.
+  success: 'bg-success text-white hover:opacity-90 border border-transparent',
+  'danger-solid': 'bg-danger text-white hover:opacity-90 border border-transparent',
 }
 
 export default function Button({

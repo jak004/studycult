@@ -36,7 +36,10 @@ export function createCallRoom() {
     body: {
       name: `studycult-${crypto.randomUUID()}`,
       privacy: 'public',
-      properties: { exp, eject_at_room_exp: true },
+      // enable_prejoin_ui: false — both sides already went through our own
+      // ring/accept handshake, so Daily's own "click to join" device-check
+      // screen would just be a redundant second confirmation.
+      properties: { exp, eject_at_room_exp: true, enable_prejoin_ui: false },
     },
   })
 }

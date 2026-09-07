@@ -28,6 +28,24 @@ export function CallProvider({ children }) {
   const ringTimeoutRef = useRef(null)
   const resolvedClearRef = useRef(null)
 
+  // Mirrors of the three state values, read by the action functions below
+  // instead of reaching into a setState updater. Updater functions are
+  // supposed to be pure — React can invoke them more than once — so an
+  // earlier version of this file called acceptCall()/endCall() etc. *inside*
+  // one, which made accept-then-immediately-hang-up reproducible.
+  const incomingRef = useRef(null)
+  const outgoingRef = useRef(null)
+  const activeRef = useRef(null)
+  useEffect(() => {
+    incomingRef.current = incomingCall
+  }, [incomingCall])
+  useEffect(() => {
+    outgoingRef.current = outgoingCall
+  }, [outgoingCall])
+  useEffect(() => {
+    activeRef.current = activeCall
+  }, [activeCall])
+
   useEffect(() => {
     if (!myId) return
     let active = true
@@ -124,35 +142,50 @@ export function CallProvider({ children }) {
   // Caller hanging up their own ring before the receiver responds — reuses
   // markMissed rather than a dedicated status so RLS/the enum stay minimal.
   async function cancelOutgoingCall() {
-    setOutgoingCall((cur) => {
-      if (cur) markMissed(cur.id).catch(() => {})
-      return null
-    })
+    const call = outgoingRef.current
+    if (!call) return
+    setOutgoingCall(null)
     clearTimeout(ringTimeoutRef.current)
+    try {
+      await markMissed(call.id)
+    } catch (err) {
+      console.error('Failed to cancel call', err)
+    }
   }
 
   async function respondAccept() {
-    setIncomingCall((cur) => {
-      if (cur) {
-        setActiveCall({ id: cur.id, roomUrl: cur.roomUrl, otherName: cur.callerName })
-        acceptCall(cur.id).catch(() => setActiveCall(null))
-      }
-      return null
-    })
+    const call = incomingRef.current
+    if (!call) return
+    setIncomingCall(null)
+    setActiveCall({ id: call.id, roomUrl: call.roomUrl, otherName: call.callerName })
+    try {
+      await acceptCall(call.id)
+    } catch (err) {
+      console.error('Failed to accept call', err)
+      setActiveCall(null)
+    }
   }
 
   async function respondDecline() {
-    setIncomingCall((cur) => {
-      if (cur) declineCall(cur.id).catch(() => {})
-      return null
-    })
+    const call = incomingRef.current
+    if (!call) return
+    setIncomingCall(null)
+    try {
+      await declineCall(call.id)
+    } catch (err) {
+      console.error('Failed to decline call', err)
+    }
   }
 
   async function leaveActiveCall() {
-    setActiveCall((cur) => {
-      if (cur) endCall(cur.id).catch(() => {})
-      return null
-    })
+    const call = activeRef.current
+    if (!call) return
+    setActiveCall(null)
+    try {
+      await endCall(call.id)
+    } catch (err) {
+      console.error('Failed to end call', err)
+    }
   }
 
   const value = {

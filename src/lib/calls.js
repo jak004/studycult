@@ -29,11 +29,18 @@ export async function startCall({ conversationId, callerId, receiverId }) {
   return data
 }
 
+// .select().single() on purpose (unlike the best-effort updates below): a
+// plain .update() with no .select() reports success even when RLS quietly
+// matched zero rows, which would otherwise show up as the receiver's call
+// screen closing itself right after they accept, with no error anywhere —
+// .single() forces a real error when the row isn't actually there.
 export async function acceptCall(callId) {
   const { error } = await supabase
     .from('calls')
     .update({ status: 'accepted', responded_at: new Date().toISOString() })
     .eq('id', callId)
+    .select()
+    .single()
   if (error) throw error
 }
 
@@ -42,6 +49,8 @@ export async function declineCall(callId) {
     .from('calls')
     .update({ status: 'declined', responded_at: new Date().toISOString() })
     .eq('id', callId)
+    .select()
+    .single()
   if (error) throw error
 }
 
